@@ -16,7 +16,7 @@ namespace IJunior2
     class Store
     {
         private List<string> _productsName;
-        
+
         private List<Product> _productsAssortment;
         private Queue<Client> _clients;
 
@@ -24,7 +24,7 @@ namespace IJunior2
 
         public Store()
         {
-            _productsName = new List<string> 
+            _productsName = new List<string>
             {
                 "Анчоус", "Авокадо", "Арбуз",
                 "Баклажан", "Баранина", "Банан",
@@ -50,7 +50,7 @@ namespace IJunior2
         {
             CreateClientQueue();
 
-            while(_clients.Count != 0)
+            while (_clients.Count != 0)
             {
                 Console.WriteLine($"Денег у магазина: {_money}");
 
@@ -83,40 +83,36 @@ namespace IJunior2
             int maxClientMoney = 5000;
 
             int maxProductsFromClient = 5;
-            int numberOfClients = Utilites.RandomNumber(minClients, maxClients);
+            int numberOfClients = Utilites.RandomizeNumber(minClients, maxClients);
 
-            for(int i = 0; i < numberOfClients; i++)
+            for (int i = 0; i < numberOfClients; i++)
             {
-                Client client = new Client(Utilites.RandomNumber(minClientMoney, maxClientMoney));
+                Client client = new Client(Utilites.RandomizeNumber(minClientMoney, maxClientMoney));
 
-                for(int j = 0; j < maxProductsFromClient; j++)
+                for (int j = 0; j < maxProductsFromClient; j++)
                 {
-                    int randomIndex = Utilites.RandomNumber(0, _productsAssortment.Count - 1);
+                    int randomIndex = Utilites.RandomizeNumber(0, _productsAssortment.Count - 1);
 
                     Product product = new Product(_productsAssortment[randomIndex].Name,
                                                     _productsAssortment[randomIndex].Cost);
 
-                    client.GetProduct(product);
+                    client.TakeProduct(product);
                 }
-                
+
                 _clients.Enqueue(client);
             }
         }
 
-        private List<Product> CreateProductAssortment()
+        private void CreateProductAssortment()
         {
             int maxProducts = 50;
 
             int minPrice = 100;
             int maxPrice = 1000;
 
-            List<Product> products = new List<Product>();
-
-            for (int i = 0; i < Utilites.RandomNumber(1, maxProducts); i++)
-                _productsAssortment.Add(new Product(_productsName[Utilites.RandomNumber(0, _productsName.Count - 1)], 
-                                        Utilites.RandomNumber(minPrice, maxPrice)));
-
-            return products;
+            for (int i = 0; i < Utilites.RandomizeNumber(1, maxProducts); i++)
+                _productsAssortment.Add(new Product(_productsName[Utilites.RandomizeNumber(0, _productsName.Count - 1)],
+                                        Utilites.RandomizeNumber(minPrice, maxPrice)));
         }
     }
 
@@ -148,14 +144,14 @@ namespace IJunior2
         public void ShowInfo()
         {
             Console.Write("Продукты/цена: ");
-            
-            foreach(Product product in _products)
+
+            foreach (Product product in _products)
                 Console.Write($"{product.Name}/{product.Cost}; ");
 
             Console.WriteLine($"Сумма покупки: {PriceOfProducts}. У клиента {Money}");
         }
 
-        public void GetProduct(Product product)
+        public void TakeProduct(Product product)
         {
             _products.Add(product);
         }
@@ -166,21 +162,31 @@ namespace IJunior2
 
             while (isPaid == false)
             {
-                if(PriceOfProducts > Money)
+                if (TryBuy())
+                {
+                    BuyProducts();
+                    isPaid = true;
+                }
+                else
                 {
                     Console.WriteLine($"У покупателя {Money} денег, а нужно {PriceOfProducts}. Покупатель убирает из корзины случайный товар...");
                     RemoveRandomProduct();
                 }
-                else
-                {
-                    Console.Write($"У покупателя {Money} денег, а нужно {PriceOfProducts}. ");
-                    Money -= PriceOfProducts;
-                    isPaid = true;
-                    Console.WriteLine($"Покупатель совершает покупку и у него остаётся {Money} денег.");
-                }
             }
 
             return PriceOfProducts;
+        }
+
+        private bool TryBuy()
+        {
+            return Money >= PriceOfProducts;
+        }
+
+        private void BuyProducts()
+        {
+            Console.Write($"У покупателя {Money} денег, а нужно {PriceOfProducts}. ");
+            Money -= PriceOfProducts;
+            Console.WriteLine($"Покупатель совершает покупку и у него остаётся {Money} денег.");
         }
 
         private void RemoveRandomProduct()
@@ -188,7 +194,7 @@ namespace IJunior2
             if (_products.Count == 0)
                 return;
 
-            int remoteIndex = Utilites.RandomNumber(0, _products.Count - 1);
+            int remoteIndex = Utilites.RandomizeNumber(0, _products.Count - 1);
 
             _products.RemoveAt(remoteIndex);
         }
@@ -210,7 +216,7 @@ namespace IJunior2
     {
         private static Random s_random = new Random();
 
-        public static int RandomNumber(int minNumber, int maxMunber)
+        public static int RandomizeNumber(int minNumber, int maxMunber)
         {
             return s_random.Next(minNumber, maxMunber + 1);
         }
