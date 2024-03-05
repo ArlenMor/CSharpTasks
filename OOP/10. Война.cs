@@ -15,192 +15,245 @@ namespace IJunior2
     {
         static void Main()
         {
-            BattleArena battleArena = new BattleArena();
+            Battle battleArena = new Battle();
 
-            battleArena.Work();
+            battleArena.Start();
         }
     }
 
-    class BattleArena
+    class Battle
     {
-        public void Work()
+        public void Start()
         {
-            Console.WriteLine(">>> Добро пожаловать на боевую арену <<<\n");
+            List<Creature> firstSquad = CreateCreatures();
+            List<Creature> secondSquad = CreateCreatures();
 
-            Console.WriteLine("Выберите двух бойцов, которых вы хотите свести в поединке (укажите норер): ");
+            FightBetweenCreatureSquads(firstSquad, secondSquad);
 
-            Console.Write("Подождите, идёт подготовка к бою");
+            ShowWinner(firstSquad, secondSquad);
+        }
 
-            int numberOfDots = 3;
+        private void ShowCreatureSquads(List<Creature> firstSquad, List<Creature> secondSquad)
+        {
+            Console.WriteLine("Первый отряд: ");
+            ShowCreatures(firstSquad, 3);
 
-            for (int i = 0; i < numberOfDots; i++)
+            Console.WriteLine("Второй отряд: ");
+            ShowCreatures(secondSquad, 9);
+        }
+
+        private void ShowCreatures(List<Creature> creatures, int cursorPositionTop, int tabValue = 22, int tabCounter = 0)
+        {
+            for (int i = 0; i < creatures.Count; i++)
             {
-                Console.Write('.');
-                Thread.Sleep(1000);
+                creatures[i].ShowInfo(tabCounter, cursorPositionTop);
+                tabCounter += tabValue;
+                Console.WriteLine();
             }
-
-            Console.Clear();
         }
 
-        private Soldier GetSoldier(List<Soldier> soldiers)
+        private List<Creature> CreateCreatures()
         {
-            int index;
+            List<Creature> creatures = new List<Creature>();
 
-            Soldier soldier = null;
+            int randomOrc = 1;
+            int randomGoblin = 2;
+            int randomElf = 3;
+            int randomHuman = 4;
 
-            do
+            int maxCreatureInSquad = 5;
+
+            for (int i = 0; i < maxCreatureInSquad; i++)
             {
-                if(int.TryParse(Console.ReadLine(), out index) == false)
-                    Console.Write("Вы ввели что-то не то. Попробуйте ещё раз:");
-                else if (index < 1 || index > soldiers.Count)
-                    Console.Write("Вы ввели неверный индекс. Попроуйбет ещё раз:");
-                else
-                    soldier = soldiers[index - 1].Clone();
-            } while (soldier == null);
+                int health;
+                int damage;
+                int stamina;
 
-            return soldier;
-        }
+                RandomParamsForCreature(out health, out damage, out stamina);
 
-        private void Fight(Soldier firstSoldier, Soldier secondSoldier)
-        {
-            while (firstSoldier.CurrentHealth > 0 && secondSoldier.CurrentHealth > 0)
-            {
-                firstSoldier.ShowInfo(50, 0);
-                secondSoldier.ShowInfo(85, 0);
+                int randomCreature = Utilites.RandomizeNumber(randomOrc, randomHuman);
 
-                Console.SetCursorPosition(0, 0);
-
-                if (PrioritizeFirstTurn(firstSoldier, secondSoldier))
+                if (randomCreature == randomOrc)
                 {
-                    Turn(firstSoldier, secondSoldier);
-                    if (secondSoldier.CurrentHealth > 0)
-                        Turn(secondSoldier, firstSoldier);
+                    Orc creature = new Orc("Орк " + (i + 1), health, damage, stamina);
+                    creatures.Add(creature);
+                }
+                else if (randomCreature == randomGoblin)
+                {
+                    Goblin creature = new Goblin("Гоблин " + (i + 1), health, damage, stamina);
+                    creatures.Add(creature);
+                }
+                else if (randomCreature == randomElf)
+                {
+                    Elf creature = new Elf("Эльф " + (i + 1), health, damage, stamina);
+                    creatures.Add(creature);
                 }
                 else
                 {
-                    Turn(secondSoldier, firstSoldier);
-                    if (firstSoldier.CurrentHealth > 0)
-                        Turn(firstSoldier, secondSoldier);
+                    Human creature = new Human("Человек " + (i + 1), health, damage, stamina);
+                    creatures.Add(creature);
                 }
-
-                Console.SetCursorPosition(0, 5);
-
-                Console.WriteLine("Нажмите любую клавишу, чтобы продолжить битву...");
-                Console.ReadKey();
-                Console.Clear();
             }
 
-            Console.Clear();
+            return creatures;
+        }
 
-            ShowWinner(firstSoldier, secondSoldier);
+        private void RandomParamsForCreature(out int health, out int damage, out int stamina)
+        {
+            int maxHealth = 200;
+            int minHealth = 100;
 
-            Console.WriteLine("Нажмите любую клавишу, чтобы выйти...");
+            int maxDamage = 40;
+            int minDamage = 20;
+
+            int maxStamina = 150;
+            int minStamina = 100;
+
+            health = Utilites.RandomizeNumber(minHealth, maxHealth);
+            damage = Utilites.RandomizeNumber(minDamage, maxDamage);
+            stamina = Utilites.RandomizeNumber(minStamina, maxStamina);
+        }
+
+        private void FightBetweenCreatureSquads(List<Creature> firstSquad, List<Creature> secondSquad)
+        {
+            while (firstSquad.Count > 0 && secondSquad.Count > 0)
+            {
+                Console.WriteLine(">>> Вы находитесь посреди поля боя...  <<<\n");
+
+                ShowCreatureSquads(firstSquad, secondSquad);
+
+                int firstCreatureIndex = Utilites.RandomizeNumber(0, firstSquad.Count - 1);
+                int secondCreatureIndex = Utilites.RandomizeNumber(0, secondSquad.Count - 1);
+
+                FightBetweenCreatures(firstSquad[firstCreatureIndex], secondSquad[secondCreatureIndex]);
+
+                if (firstSquad[firstCreatureIndex].Health <= 0)
+                    firstSquad.RemoveAt(firstCreatureIndex);
+
+                if (secondSquad[secondCreatureIndex].Health <= 0)
+                    secondSquad.RemoveAt(secondCreatureIndex);
+            }
+        }
+
+        private void FightBetweenCreatures(Creature firstCreature, Creature secondCreature)
+        {
+            if (PrioritizeFirstTurn(firstCreature, secondCreature))
+            {
+                Console.Write("Ход первого отряда: ");
+                Turn(firstCreature, secondCreature);
+                if (secondCreature.Health > 0)
+                {
+                    Console.Write("Ход второго отряда: ");
+                    Turn(secondCreature, firstCreature);
+                }    
+            }else
+            {
+                Console.Write("Ход второго отряда: ");
+                Turn(secondCreature, firstCreature);
+
+                if (firstCreature.Health > 0)
+                {
+                    Console.Write("Ход первого отряда: ");
+                    Turn(firstCreature, secondCreature);
+                }
+            }
+
+            Console.WriteLine("Нажмите любую клавишу, чтобы продолжить битву...");
             Console.ReadKey();
+            Console.Clear();
         }
 
-        private void ShowWinner(Soldier firstSoldier, Soldier secondSoldier)
+        private void ShowWinner(List<Creature> firstSquad, List<Creature> secondSquad)
         {
-            if (firstSoldier.CurrentHealth < 0)
-                Console.WriteLine($">>> Победил {secondSoldier.Name}!!! <<<");
-            else if (secondSoldier.CurrentHealth < 0)
-                Console.WriteLine($">>> Победил {firstSoldier.Name}!!! <<<");
+            if (firstSquad.Count <= 0)
+                Console.WriteLine($">>> Победил второй отряд!!! <<<");
+            else if (secondSquad.Count <= 0)
+                Console.WriteLine($">>> Победил первый отряд!!! <<<");
             else
                 Console.WriteLine($">>> Ого!!! Да у нас ничья!!! <<<");
         }
 
-        private bool PrioritizeFirstTurn(Soldier firstSoldier, Soldier secondSoldier)
+        private bool PrioritizeFirstTurn(Creature firstCreature, Creature secondCreature)
         {
-            float summOfCurrentStaminaAbout = firstSoldier.CurrentStaminaAmount + secondSoldier.CurrentStaminaAmount;
+            float summOfCurrentStaminaAbout = firstCreature.Stamina + secondCreature.Stamina;
 
-            return firstSoldier.CurrentStaminaAmount / summOfCurrentStaminaAbout > secondSoldier.CurrentStaminaAmount / summOfCurrentStaminaAbout;
+            return firstCreature.Stamina / summOfCurrentStaminaAbout > secondCreature.Stamina / summOfCurrentStaminaAbout;
         }
 
-        private void Turn(Soldier enableSoldier, Soldier disableSoldier)
+        private void Turn(Creature enableCreature, Creature disableCreature)
         {
-            Console.WriteLine($"Ход {enableSoldier.Name}");
+            Console.WriteLine($"{enableCreature.Name}");
 
-            int minStaminaValueForRest = 15;
+            int minStaminaValueForRest = 25;
 
-            if (enableSoldier.CurrentStaminaAmountInPercent < minStaminaValueForRest)
+            if (enableCreature.Stamina < minStaminaValueForRest)
             {
-                enableSoldier.Rest();
+                enableCreature.Rest();
                 return;
             }
 
-            int action = Utilites.RandomNumber(0, 2);
+            int action = Utilites.RandomizeNumber(0, 2);
 
             if (action == 0)
-                Attack(enableSoldier, disableSoldier);
+            {
+                Attack(enableCreature, disableCreature);
+            }
             else if (action == 1)
-                if (enableSoldier.CurrentStaminaAmountInPercent > 90)
-                    Attack(enableSoldier, disableSoldier);
+            {
+                if (enableCreature.Stamina > 75)
+                {
+                    Attack(enableCreature, disableCreature);
+                }
                 else
-                    enableSoldier.Rest();
+                {
+                    Console.WriteLine($"{enableCreature.Name} отдыхает..");
+                    enableCreature.Rest();
+                }
+            }
             else
-                enableSoldier.UseAbilily();
+            {
+                Console.WriteLine($"{enableCreature.Name} использует способность!");
+                enableCreature.UseAbilily();
+            }
+                
         }
 
-        private void Attack(Soldier attacker, Soldier defender)
+        private void Attack(Creature attacker, Creature defender)
         {
-            float damage = attacker.GiveDamage();
+            int damage = attacker.GetDamage();
             defender.TakeDamage(damage);
             Console.WriteLine($"{attacker.Name} нанёс {damage} урона");
         }
     }
 
-    abstract class Soldier
+    abstract class Creature
     {
-        protected Attribute _mainAtribute;
-
-        public Soldier(string name, Attributes mainAtribute, int strength, int agility, int stamina)
+        protected Creature(string name, int maxHealth, int damage, int stamina)
         {
             Name = name;
-
-            float minHealth = 120;
-            float healthPerStrenght = 22;
-            float minStaminaAmount = 75;
-            float staminaAmountPerStamina = 12;
-
-            Strength = new Attribute(strength);
-            Agility = new Attribute(agility);
-            Stamina = new Attribute(stamina);
-
-            if (mainAtribute == Attributes.Strength)
-                _mainAtribute = Strength;
-            else if (mainAtribute == Attributes.Agility)
-                _mainAtribute = Agility;
-            else
-                _mainAtribute = Stamina;
-
-            MaxHealth = minHealth + (Strength.Value * healthPerStrenght);
-            CurrentHealth = MaxHealth;
-
-            Damage = _mainAtribute.Value;
-
-            MaxStaminaAmount = minStaminaAmount + (Stamina.Value * staminaAmountPerStamina);
-            CurrentStaminaAmount = MaxStaminaAmount;
+            Health = maxHealth;
+            MaxHealth = maxHealth;
+            Damage = damage;
+            Stamina = stamina;
+            MaxStamina = Stamina;
         }
 
         public string Name { get; private set; }
-        public Attribute Strength { get; private set; }
-        public Attribute Agility { get; private set; }
-        public Attribute Stamina { get; private set; }
-        public float MaxHealth { get; private set; }
-        public float CurrentHealth { get; protected set; }
-        public float Damage { get; protected set; }
-        public float MaxStaminaAmount { get; private set; }
-        public float CurrentStaminaAmount { get; protected set; }
-        public float CurrentStaminaAmountInPercent => MaxStaminaAmount / 100f * CurrentStaminaAmount;
+        public int Health { get; protected set; }
+        public int MaxHealth { get; private set; }
+        public int Damage { get; private set; }
+        public int Stamina { get; protected set; }
+        public int MaxStamina { get; private set; }
 
-        public abstract float GiveDamage();
+        public abstract int GetDamage();
 
-        public abstract void TakeDamage(float damage);
+        public abstract void TakeDamage(int damage);
 
         public abstract void Rest();
 
         public abstract void UseAbilily();
 
-        public abstract Soldier Clone();
+        public abstract Creature Clone();
 
         public void ShowInfo(int cursorPositionLeft = 0, int cursorPositionTop = 0)
         {
@@ -209,63 +262,218 @@ namespace IJunior2
             Console.WriteLine($"Имя: {Name}");
             Console.SetCursorPosition(cursorPositionLeft, cursorPositionTop++);
 
-            Console.WriteLine($"Здоровье: {CurrentHealth}/{MaxHealth}");
+            Console.WriteLine($"Здоровье: {Health}/{MaxHealth}");
             Console.SetCursorPosition(cursorPositionLeft, cursorPositionTop++);
 
-            Console.WriteLine($"Выносливость: {CurrentStaminaAmount}/{MaxStaminaAmount}");
+            Console.WriteLine($"Выносливость: {Stamina}/{MaxStamina}");
             Console.SetCursorPosition(cursorPositionLeft, cursorPositionTop++);
 
             Console.WriteLine($"Урон: {Damage}");
         }
 
-        protected float GiveDamageDefault()
+        protected int GetDamageDefault()
         {
-            SpendStaminaOnHit();
+            SpendStamina();
 
             return Damage;
         }
 
-        protected void TakeDamageDefault(float damage)
+        protected void TakeDamageDefault(int damage)
         {
-            CurrentHealth -= damage;
+            Health -= damage;
         }
 
         protected void RestDefault()
         {
-            float recoveryPercentage = 65f;
-            float maxPercentage = 100f;
+            int staminaRecovery = 50;
 
-            float staminaRecovery = (MaxStaminaAmount - CurrentStaminaAmount) / maxPercentage * recoveryPercentage;
+            Stamina += staminaRecovery;
 
-            Console.WriteLine($"{Name} восстановил {staminaRecovery} выносливости.");
-
-            CurrentStaminaAmount += staminaRecovery;
+            if (Stamina > MaxStamina)
+                Stamina = MaxStamina;
         }
 
-        protected void SpendStaminaOnHit(int hitCost = 25)
+        protected void SpendStamina(int stamina = 25)
         {
-            CurrentStaminaAmount -= hitCost;
+            Stamina -= stamina;
 
-            if (CurrentStaminaAmount < 0)
-                CurrentStaminaAmount = 0;
+            if (Stamina < 0)
+                Stamina = 0;
         }
     }
 
-    class Attribute
+    class Orc : Creature
     {
-        public Attribute(int value)
+        bool _isRage;
+
+        public Orc(string name, int maxHealth, int damage, int stamina) : base(name, maxHealth, damage, stamina)
         {
-            Value = value;
+            _isRage = false;
         }
 
-        public int Value { get; private set; }
+        public override Creature Clone()
+        {
+            return new Orc(Name, MaxHealth, Damage, Stamina);
+        }
+
+        public override int GetDamage()
+        {
+            if (_isRage)
+            {
+                _isRage = false;
+                return Damage * 2;
+            }
+            else
+            {
+                return GetDamageDefault();
+            }
+        }
+
+        public override void Rest()
+        {
+            RestDefault();
+        }
+
+        public override void TakeDamage(int damage)
+        {
+            if (_isRage)
+                Health -= damage / 2;
+            else
+                TakeDamageDefault(damage);
+        }
+
+        public override void UseAbilily()
+        {
+            SpendStamina(40);
+            _isRage = true;
+        }
+    }
+
+    class Goblin : Creature
+    {
+        bool isReadyToEvade = false;
+        int chanceToEvade = 40;
+
+        public Goblin(string name, int maxHealth, int damage, int stamina) : base(name, maxHealth, damage, stamina)
+        {
+        }
+
+        public override Creature Clone()
+        {
+            return new Goblin(Name, MaxHealth, Damage, Stamina);
+        }
+
+        public override int GetDamage()
+        {
+            return GetDamageDefault();
+        }
+
+        public override void Rest()
+        {
+            RestDefault();
+        }
+
+        public override void TakeDamage(int damage)
+        {
+            if (isReadyToEvade)
+            {
+                int hungredPercent = 100;
+
+                if (chanceToEvade > Utilites.RandomizeNumber(0, hungredPercent))
+                {
+                    Console.WriteLine("Гоблин увернулся от атаки!!! Следующий урон не пройдёт...");
+                    return;
+                }
+                else
+                    TakeDamageDefault(damage);
+            }    
+
+            TakeDamageDefault(damage);
+        }
+
+        public override void UseAbilily()
+        {
+            SpendStamina(35);
+            isReadyToEvade = true;
+        }
+    }
+
+    class Elf : Creature
+    {
+        public Elf(string name, int maxHealth, int damage, int stamina) : base(name, maxHealth, damage, stamina)
+        {
+        }
+
+        public override Creature Clone()
+        {
+            return new Elf(Name, MaxHealth, Damage, Stamina);
+        }
+
+        public override int GetDamage()
+        {
+            return GetDamageDefault();
+        }
+
+        public override void Rest()
+        {
+            RestDefault();
+        }
+
+        public override void TakeDamage(int damage)
+        {
+            TakeDamageDefault(damage);
+        }
+
+        public override void UseAbilily()
+        {
+            Health += 25;
+
+            if (Health > MaxHealth)
+                Health = MaxHealth;
+
+            SpendStamina(50);
+        }
+    }
+
+    class Human : Creature
+    {
+        public Human(string name, int maxHealth, int damage, int stamina) : base(name, maxHealth, damage, stamina)
+        {
+        }
+
+        public override Creature Clone()
+        {
+            return new Human(Name, MaxHealth, Damage, Stamina);
+        }
+
+        public override int GetDamage()
+        {
+            SpendStamina(15);
+
+            return Damage;
+        }
+
+        public override void Rest()
+        {
+            RestDefault();
+        }
+
+        public override void TakeDamage(int damage)
+        {
+            TakeDamageDefault(damage);
+        }
+
+        public override void UseAbilily()
+        {
+            Stamina = MaxStamina;
+        }
     }
 
     class Utilites
     {
         private static Random s_random = new Random();
 
-        public static int RandomNumber(int minNumber, int maxMunber)
+        public static int RandomizeNumber(int minNumber, int maxMunber)
         {
             return s_random.Next(minNumber, maxMunber + 1);
         }
