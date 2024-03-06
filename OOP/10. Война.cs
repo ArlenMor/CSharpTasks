@@ -1,29 +1,21 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 
 namespace IJunior2
 {
-    enum Attributes
-    {
-        Strength,
-        Agility,
-        Stamina
-    }
-
     internal class Program
     {
         static void Main()
         {
-            Battle battleArena = new Battle();
+            Battle battle = new Battle();
 
-            battleArena.Start();
+            battle.Fight();
         }
     }
 
     class Battle
     {
-        public void Start()
+        public void Fight()
         {
             List<Creature> firstSquad = CreateCreatures();
             List<Creature> secondSquad = CreateCreatures();
@@ -54,64 +46,25 @@ namespace IJunior2
 
         private List<Creature> CreateCreatures()
         {
-            List<Creature> creatures = new List<Creature>();
+            List<Creature> creaturesTemplate = new List<Creature> {
+                new Orc("Орк", 0, 0, 0),
+                new Goblin("Гоблин", 0, 0, 0),
+                new Elf("Эльф", 0, 0, 0),
+                new Human("Человек", 0, 0, 0),
+            };
 
-            int randomOrc = 1;
-            int randomGoblin = 2;
-            int randomElf = 3;
-            int randomHuman = 4;
+            List<Creature> creatures = new List<Creature>();
 
             int maxCreatureInSquad = 5;
 
             for (int i = 0; i < maxCreatureInSquad; i++)
             {
-                int health;
-                int damage;
-                int stamina;
+                int randomCreatureIndex = Utilites.RandomizeNumber(0, creaturesTemplate.Count - 1);
 
-                RandomParamsForCreature(out health, out damage, out stamina);
-
-                int randomCreature = Utilites.RandomizeNumber(randomOrc, randomHuman);
-
-                if (randomCreature == randomOrc)
-                {
-                    Orc creature = new Orc("Орк " + (i + 1), health, damage, stamina);
-                    creatures.Add(creature);
-                }
-                else if (randomCreature == randomGoblin)
-                {
-                    Goblin creature = new Goblin("Гоблин " + (i + 1), health, damage, stamina);
-                    creatures.Add(creature);
-                }
-                else if (randomCreature == randomElf)
-                {
-                    Elf creature = new Elf("Эльф " + (i + 1), health, damage, stamina);
-                    creatures.Add(creature);
-                }
-                else
-                {
-                    Human creature = new Human("Человек " + (i + 1), health, damage, stamina);
-                    creatures.Add(creature);
-                }
+                creatures.Add(creaturesTemplate[randomCreatureIndex].CloneWithRandomizeValue(i + 1));
             }
 
             return creatures;
-        }
-
-        private void RandomParamsForCreature(out int health, out int damage, out int stamina)
-        {
-            int maxHealth = 200;
-            int minHealth = 100;
-
-            int maxDamage = 40;
-            int minDamage = 20;
-
-            int maxStamina = 150;
-            int minStamina = 100;
-
-            health = Utilites.RandomizeNumber(minHealth, maxHealth);
-            damage = Utilites.RandomizeNumber(minDamage, maxDamage);
-            stamina = Utilites.RandomizeNumber(minStamina, maxStamina);
         }
 
         private void FightBetweenCreatureSquads(List<Creature> firstSquad, List<Creature> secondSquad)
@@ -141,12 +94,14 @@ namespace IJunior2
             {
                 Console.Write("Ход первого отряда: ");
                 Turn(firstCreature, secondCreature);
+
                 if (secondCreature.Health > 0)
                 {
                     Console.Write("Ход второго отряда: ");
                     Turn(secondCreature, firstCreature);
-                }    
-            }else
+                }
+            }
+            else
             {
                 Console.Write("Ход второго отряда: ");
                 Turn(secondCreature, firstCreature);
@@ -215,20 +170,20 @@ namespace IJunior2
                 Console.WriteLine($"{enableCreature.Name} использует способность!");
                 enableCreature.UseAbilily();
             }
-                
+
         }
 
         private void Attack(Creature attacker, Creature defender)
         {
-            int damage = attacker.GetDamage();
-            defender.TakeDamage(damage);
-            Console.WriteLine($"{attacker.Name} нанёс {damage} урона");
+            attacker.Attack(defender);
+
+            Console.WriteLine($"{attacker.Name} ударил {defender.Name}!");
         }
     }
 
     abstract class Creature
     {
-        protected Creature(string name, int maxHealth, int damage, int stamina)
+        public Creature(string name, int maxHealth, int damage, int stamina)
         {
             Name = name;
             Health = maxHealth;
@@ -245,15 +200,12 @@ namespace IJunior2
         public int Stamina { get; protected set; }
         public int MaxStamina { get; private set; }
 
+        public abstract void Attack(Creature enemy);
         public abstract int GetDamage();
-
         public abstract void TakeDamage(int damage);
-
         public abstract void Rest();
-
         public abstract void UseAbilily();
-
-        public abstract Creature Clone();
+        public abstract Creature CloneWithRandomizeValue(int creatureNameIndex);
 
         public void ShowInfo(int cursorPositionLeft = 0, int cursorPositionTop = 0)
         {
@@ -300,28 +252,56 @@ namespace IJunior2
             if (Stamina < 0)
                 Stamina = 0;
         }
+
+        protected void RandomizeValue()
+        {
+            int maxHealth = 200;
+            int minHealth = 100;
+
+            int maxDamage = 40;
+            int minDamage = 20;
+
+            int maxStamina = 150;
+            int minStamina = 100;
+
+            Health = Utilites.RandomizeNumber(minHealth, maxHealth);
+            MaxHealth = Health;
+            Damage = Utilites.RandomizeNumber(minDamage, maxDamage);
+            Stamina = Utilites.RandomizeNumber(minStamina, maxStamina);
+            MaxStamina = Stamina;
+        }
     }
 
     class Orc : Creature
     {
-        bool _isRage;
+        private bool _isRage;
 
         public Orc(string name, int maxHealth, int damage, int stamina) : base(name, maxHealth, damage, stamina)
         {
             _isRage = false;
         }
 
-        public override Creature Clone()
+        public override void Attack(Creature enemy)
         {
-            return new Orc(Name, MaxHealth, Damage, Stamina);
+            enemy.TakeDamage(GetDamage());
+        }
+
+        public override Creature CloneWithRandomizeValue(int creatureNameIndex)
+        {
+            Orc creature = new Orc("Орк " + creatureNameIndex, 0, 0, 0);
+            creature.RandomizeValue();
+
+            return creature;
         }
 
         public override int GetDamage()
         {
+            int damageMultiplyCoef = 2;
+
             if (_isRage)
             {
                 _isRage = false;
-                return Damage * 2;
+                return Damage * damageMultiplyCoef;
             }
             else
             {
@@ -336,31 +316,42 @@ namespace IJunior2
 
         public override void TakeDamage(int damage)
         {
+            int damageResist = 2;
+
             if (_isRage)
-                Health -= damage / 2;
+                Health -= damage / damageResist;
             else
                 TakeDamageDefault(damage);
         }
 
         public override void UseAbilily()
         {
-            SpendStamina(40);
+            int staminaOnAbility = 50;
+
+            SpendStamina(staminaOnAbility);
             _isRage = true;
         }
     }
 
     class Goblin : Creature
     {
-        bool isReadyToEvade = false;
-        int chanceToEvade = 40;
+        private bool _isReadyToEvade = false;
 
         public Goblin(string name, int maxHealth, int damage, int stamina) : base(name, maxHealth, damage, stamina)
         {
         }
 
-        public override Creature Clone()
+        public override Creature CloneWithRandomizeValue(int creatureNameIndex)
         {
-            return new Goblin(Name, MaxHealth, Damage, Stamina);
+            Goblin creature = new Goblin("Гоблин " + creatureNameIndex, 0, 0, 0);
+            creature.RandomizeValue();
+
+            return creature;
+        }
+
+        public override void Attack(Creature enemy)
+        {
+            enemy.TakeDamage(GetDamage());
         }
 
         public override int GetDamage()
@@ -375,7 +366,9 @@ namespace IJunior2
 
         public override void TakeDamage(int damage)
         {
-            if (isReadyToEvade)
+            int chanceToEvade = 40;
+
+            if (_isReadyToEvade)
             {
                 int hungredPercent = 100;
 
@@ -385,28 +378,42 @@ namespace IJunior2
                     return;
                 }
                 else
+                {
                     TakeDamageDefault(damage);
-            }    
+                }
+            }
 
             TakeDamageDefault(damage);
         }
 
         public override void UseAbilily()
         {
-            SpendStamina(35);
-            isReadyToEvade = true;
+            int staminaOnAbility = 35;
+
+            SpendStamina(staminaOnAbility);
+            _isReadyToEvade = true;
         }
     }
 
     class Elf : Creature
     {
+        private int _healValue = 25;
+
         public Elf(string name, int maxHealth, int damage, int stamina) : base(name, maxHealth, damage, stamina)
         {
         }
 
-        public override Creature Clone()
+        public override Creature CloneWithRandomizeValue(int creatureNameIndex)
         {
-            return new Elf(Name, MaxHealth, Damage, Stamina);
+            Elf creature = new Elf("Эльф " + creatureNameIndex, 0, 0, 0);
+            creature.RandomizeValue();
+
+            return creature;
+        }
+
+        public override void Attack(Creature enemy)
+        {
+            enemy.TakeDamage(GetDamage());
         }
 
         public override int GetDamage()
@@ -426,7 +433,7 @@ namespace IJunior2
 
         public override void UseAbilily()
         {
-            Health += 25;
+            Health += _healValue;
 
             if (Health > MaxHealth)
                 Health = MaxHealth;
@@ -437,18 +444,28 @@ namespace IJunior2
 
     class Human : Creature
     {
+        private int _staminaOnHit = 15;
+
         public Human(string name, int maxHealth, int damage, int stamina) : base(name, maxHealth, damage, stamina)
         {
         }
 
-        public override Creature Clone()
+        public override Creature CloneWithRandomizeValue(int creatureNameIndex)
         {
-            return new Human(Name, MaxHealth, Damage, Stamina);
+            Human creature = new Human("Человек " + creatureNameIndex, 0, 0, 0);
+            creature.RandomizeValue();
+
+            return creature;
+        }
+
+        public override void Attack(Creature enemy)
+        {
+            enemy.TakeDamage(GetDamage());
         }
 
         public override int GetDamage()
         {
-            SpendStamina(15);
+            SpendStamina(_staminaOnHit);
 
             return Damage;
         }
