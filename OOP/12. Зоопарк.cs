@@ -104,8 +104,6 @@ namespace IJunior2
             for(int i = 0; i < _vallieres.Count; i++)
                 Console.WriteLine($"{i + 1}. {_vallieres[i].Name}");
         }
-
-        
     }
 
     class Valliere
