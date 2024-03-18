@@ -19,9 +19,12 @@ namespace IJunior2
         private DetailsStorage _storage;
         private Queue<Client> _clients;
 
+        private bool _isDeptor;
+
         public CarService(int startMoney)
         {
             Money = startMoney;
+            _isDeptor = false;
             _storage = new DetailsStorage();
             _clients = new Queue<Client>();
             CreateClientQueue();
@@ -56,6 +59,7 @@ namespace IJunior2
                     case CheckStorageCommand:
                         break;
                     case ExitCommand:
+                        isWork = false;
                         break;
                     default:
                         Console.WriteLine("Вы ввели что-то не то. Попробуйте ещё раз...");
@@ -81,19 +85,24 @@ namespace IJunior2
 
             bool isProcessed = true;
 
-            while(isProcessed)
+            while (isProcessed)
             {
-                ShowClientInfo();
+                ShowClientInfo(client);
 
-                const string RepairCommand = "1";
-                const string RefusalCommand = "2";
+                Console.SetCursorPosition(0, 0);
 
+                const char RepairCommand = '1';
+                const char RefusalCommand = '2';
+
+                Console.WriteLine(">>> Автосервис <<<");
+                Console.WriteLine($"Количество денег: {Money}");
+                Console.WriteLine("-------------------");
                 Console.WriteLine($"{RepairCommand}. Отремонтировать машину.");
                 Console.WriteLine($"{RefusalCommand}. Отказать клиенту.");
 
-                string userInput = Console.ReadLine();
+                char userInput = Console.ReadKey(true).KeyChar;
 
-                switch (userInput) 
+                switch (userInput)
                 {
                     case RepairCommand:
                         Repair(client);
@@ -105,22 +114,88 @@ namespace IJunior2
                         Console.WriteLine("Вы ввели что-то другое. Попробуйте ещё раз.");
                         break;
                 }
+
+                isProcessed = false;
             }
         }
 
         private void Repair(Client client)
         {
+            Console.WriteLine("\nВведите номер детали, которую вы хотите установить в машину клиента: ");
             _storage.ShowDetails();
+
+            int index;
+            bool isCorrectInput = false;
+
+            while (isCorrectInput == false)
+            {
+                string userInput = Console.ReadLine();
+
+                if (int.TryParse(userInput, out index))
+                {
+                    if (index > 0 && index <= _storage.DetailBoxes.Count)
+                    {
+                        isCorrectInput = true;
+
+                        Detail detail = _storage.GetDetailByIndex(index - 1);
+
+                        if (detail == null)
+                        {
+                            Console.WriteLine("Детали нет складе. Откажите клиенту или выберите другую деталь.");
+                        }
+                        else if (detail.Name == client.GetDetail().Name)
+                        {
+                            Console.WriteLine("Деталь выбрана верно. Деталь успешно установлена.");
+                            Console.WriteLine($"Стоимость ремонта составила: {client.RepairPrice}. Эти деньги добавлены к вашей общей сумме.");
+                            Money += client.RepairPrice;
+                        }
+                        else
+                        {
+                            int fineСoefficient = 2;
+                            int fineAmount = (client.RepairPrice - client.GetDetail().Cost) * fineСoefficient;
+                            Console.WriteLine($"Деталь выбрана неверно. Придётся заплатить штраф в размере: {fineAmount}");
+                            Money -= fineAmount;
+
+                            if (Money < 0 && _isDeptor == false)
+                            {
+                                Console.WriteLine("У вас недостаточно денег для уплаты штрафа. Теперь вы должник.");
+                                _isDeptor = true;
+                            }
+
+                            if (Money < 0 && _isDeptor)
+                            {
+                                Console.WriteLine("Так как вы уже являетесь должником, вы не можете оплатить даже часть штрафа. Ваш автосервис закрыли. Вы проиграли...");
+                                //конец игры
+                            }
+                        }
+
+                        Console.WriteLine("Нажмите любую клавишу для продолжения...");
+                        Console.ReadKey(true);
+                        Console.Clear();
+                    }
+                    else
+                    {
+                        Console.Write("Вы ввели неверный индекс из диапазона. Попробуйте снова: ");
+                    }
+                }
+                else
+                {
+                    Console.Write("Нужно ввести число из диапазона номеров деталей. Попробуй ещё раз: ");
+                }
+            }
         }
 
         private void Refuse(Client client)
-        { 
+        {
 
         }
 
-        private void ShowClientInfo()
+        private void ShowClientInfo(Client client)
         {
+            int leftTextPadding = 80;
+            int topTextPadding = 0;
 
+            client.ShowInfo(leftTextPadding, topTextPadding);
         }
     }
 
@@ -143,6 +218,16 @@ namespace IJunior2
         public int RepairPrice { get; private set; }
 
         public Detail GetDetail() => new Detail(_brokenDetail.Name, _brokenDetail.Cost, _brokenDetail.IsBroken);
+
+        public void ShowInfo(int leftCursorPosition = 0, int rightCursorPosition = 0)
+        {
+            Console.SetCursorPosition(leftCursorPosition, rightCursorPosition);
+            Console.Write($"Машина клиента: {CarName}.");
+            Console.SetCursorPosition(leftCursorPosition, ++rightCursorPosition);
+            Console.Write($"Сломанная деталь: {_brokenDetail.Name}");
+            Console.SetCursorPosition(leftCursorPosition, ++rightCursorPosition);
+            Console.Write($"Цена ремонта: {RepairPrice}");
+        }
 
     }
 
@@ -206,9 +291,54 @@ namespace IJunior2
 
         public void ShowDetails()
         {
-            foreach(DetailBox box in _detailBoxes)
-                Console.WriteLine($"Название: {box.DetailsName}. Стоимость: {box.DetailsCost}. Количество: {box.Counter}");
+            int count = 1;
+
+            foreach (DetailBox box in _detailBoxes)
+                Console.WriteLine($"{count++}. Название: {box.DetailsName}. Стоимость: {box.DetailsCost}. Количество: {box.Counter}");
         }
+
+        public Detail GetDetailByIndex(int index)
+        {
+            if (index >= 0 && index < _detailBoxes.Count)
+            {
+                if (_detailBoxes[index].Counter <= 0)
+                {
+                    return null;
+                }
+                else
+                {
+                    Detail detail = new Detail(_detailBoxes[index].DetailsName, _detailBoxes[index].DetailsCost, false);
+                    _detailBoxes[index].Counter--;
+
+                    return detail;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Индекс за пределами диапазона.");
+                return null;
+            }
+
+        }
+
+        /*public bool TryGetDetail(Client client, out Detail detail)
+        {
+            Detail clientDetail = client.GetDetail();
+            detail = null;
+
+            foreach (DetailBox box in DetailBoxes)
+            {
+                if (clientDetail.Name == box.DetailsName && box.Counter > 0)
+                {
+                    detail = new Detail(box.DetailsName, box.DetailsCost, false);
+                    box.Counter--;
+
+                    return true;
+                }
+            }
+
+            return false;
+        }*/
 
         private void FillRandomly()
         {
@@ -234,7 +364,8 @@ namespace IJunior2
         public int Counter
         {
             get => _counter;
-            set {
+            set
+            {
                 _counter = value;
             }
         }
